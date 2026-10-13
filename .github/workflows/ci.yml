@@ -27,6 +27,6 @@ jobs:
 
       - name: Run automated tests
         env:
-          ALARM_API_TOKEN: ci-demo-token
+          ALARM_API_TOKEN: demo-token
         run: |
           python -m pytest -v
