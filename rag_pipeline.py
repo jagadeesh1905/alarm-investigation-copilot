@@ -36,6 +36,10 @@ def get_embedding_model():
     return _embedding_model
 
 
+def warm_up():
+    """Load the embedding model before the MCP server starts handling requests."""
+    get_embedding_model()
+
 def load_document(path: Path) -> str:
     """Extract text from supported document formats."""
     suffix = path.suffix.lower()

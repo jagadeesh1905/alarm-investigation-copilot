@@ -72,15 +72,25 @@ def test_investigation_requires_authentication():
 
     assert response.status_code == 401
 
+
 def test_investigation_unknown_alarm_returns_404():
-    response = client.post(
-        "/investigations",
-        json={"alarm_id": "ALM-999"},
-        headers=AUTH,
-    )
+    with patch(
+        "app.main.run_investigation",
+        new_callable=AsyncMock,
+        side_effect=RuntimeError(
+            "Error executing tool get_alarm: alarm_not_found"
+        ),
+    ):
+        response = client.post(
+            "/investigations",
+            json={"alarm_id": "ALM-999"},
+            headers=AUTH,
+        )
 
     assert response.status_code == 404
     assert response.json()["detail"]["error"] == "alarm_not_found"
+    assert "ALM-999" in response.json()["detail"]["message"]
+
 
 def test_investigation_timeout_returns_504():
     async def slow_investigation(alarm_id):
