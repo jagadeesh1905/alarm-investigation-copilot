@@ -10,3 +10,16 @@ __pycache__/
 .git/
 data/chroma_db/
 *.log
+
+
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+.git/
+.idea/
+.vscode/
