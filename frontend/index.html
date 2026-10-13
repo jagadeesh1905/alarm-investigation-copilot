@@ -1,0 +1,776 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alarm Investigation Copilot</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #131d2e;
+      --panel2: #19263a;
+      --border: #2b3b52;
+      --text: #e8eef7;
+      --muted: #9aabc1;
+      --accent: #60a5fa;
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #f87171;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.6;
+    }
+
+    .container { max-width: 1250px; margin: auto; }
+    header { margin-bottom: 24px; }
+    h1 { margin: 0 0 6px; font-size: 28px; }
+    h2 { font-size: 19px; margin: 0 0 16px; }
+    h3 { font-size: 16px; margin: 0 0 12px; }
+    p { margin-top: 6px; }
+    .muted, .subtitle { color: var(--muted); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 18px;
+      min-width: 0;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 14px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    button {
+      padding: 12px 18px;
+      background: var(--accent);
+      color: #071426;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    button:disabled { opacity: .55; cursor: wait; }
+    .notice { color: var(--yellow); font-size: 13px; margin-top: 14px; }
+    .section { margin-top: 18px; }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .success { color: var(--green); }
+    .warning { color: var(--yellow); }
+    .danger { color: var(--red); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .stat {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      min-width: 0;
+    }
+
+    .stat-label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .stat-value { font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
+
+    .report { overflow-wrap: anywhere; line-height: 1.75; }
+    .report h1 { font-size: 23px; margin-top: 22px; }
+    .report h2 { font-size: 19px; margin-top: 22px; }
+    .report h3 { font-size: 16px; margin-top: 18px; }
+    .report ul, .report ol { padding-left: 24px; }
+    .report li { margin-bottom: 7px; }
+    .report code { background: var(--panel2); padding: 2px 5px; border-radius: 4px; }
+
+    .evidence-list { display: grid; gap: 14px; }
+
+    .evidence-card {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .evidence-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .evidence-metadata {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metadata-item {
+      padding: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      min-width: 0;
+    }
+
+    .metadata-label {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .metadata-value {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .synthetic {
+      color: var(--yellow);
+      border-color: #70551b;
+    }
+
+    .evidence-excerpt {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    summary {
+      cursor: pointer;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .evidence-text {
+      margin: 12px 0 0;
+      padding: 14px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: #d4dfed;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      max-height: 450px;
+      overflow-y: auto;
+    }
+
+    .list-item {
+      padding: 12px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel2);
+      overflow-wrap: anywhere;
+    }
+
+    .list-item:last-child { margin-bottom: 0; }
+    .empty { color: var(--muted); padding: 10px 0; }
+    .hidden { display: none !important; }
+
+    .error-box {
+      padding: 14px;
+      background: #301b24;
+      border: 1px solid #783344;
+      border-radius: 8px;
+      color: #fecaca;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 760px) {
+      body { padding: 14px; }
+      h1 { font-size: 23px; }
+      .form-grid, .grid, .evidence-metadata { grid-template-columns: 1fr; }
+      .panel { padding: 15px; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+<main class="container">
+  <header>
+    <h1>Alarm Investigation Copilot</h1>
+    <div class="subtitle">
+      Alarm analysis, asset context, procedure retrieval and evidence-backed reporting.
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Start an investigation</h2>
+
+    <form id="investigationForm">
+      <div class="form-grid">
+        <div>
+          <label for="apiUrl">API base URL</label>
+          <input id="apiUrl" type="url" value="http://127.0.0.1:8000" required>
+        </div>
+        <div>
+          <label for="alarmId">Alarm ID</label>
+          <input id="alarmId" value="ALM-006" required>
+        </div>
+        <div>
+          <button id="runButton" type="submit">Investigate alarm</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <label for="token">Demo bearer token</label>
+        <input id="token" type="password" value="demo-token" autocomplete="off" required>
+      </div>
+    </form>
+
+    <div class="notice">
+      Demonstration only. Synthetic evidence is not approved operational guidance.
+      Never use this report as authorization to operate, isolate, repair or restart equipment.
+    </div>
+  </section>
+
+  <section id="loading" class="panel hidden">
+    <strong>Investigation in progress…</strong>
+    <p class="muted">The request may take a few minutes while the local model generates the report.</p>
+    <span id="liveElapsed" class="chip">Elapsed: 0.0 s</span>
+  </section>
+
+  <section id="errorPanel" class="panel hidden">
+    <h2>Request failed</h2>
+    <div id="errorMessage" class="error-box"></div>
+  </section>
+
+  <div id="results" class="hidden">
+    <section class="panel">
+      <h2>Investigation status</h2>
+      <div class="status-row">
+        <span id="statusChip" class="chip">—</span>
+        <span id="httpChip" class="chip">HTTP —</span>
+        <span id="durationChip" class="chip">Duration —</span>
+      </div>
+
+      <div class="grid">
+        <div class="stat">
+          <div class="stat-label">Alarm ID</div>
+          <div id="summaryAlarmId" class="stat-value">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Alarm description</div>
+          <div id="summaryDescription" class="stat-value">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Asset</div>
+          <div id="summaryAsset" class="stat-value">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Priority score</div>
+          <div id="summaryPriority" class="stat-value">—</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="stat-label">Trace ID</div>
+        <div id="traceId" class="muted">—</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Alarm and asset details</h2>
+      <div id="alarmDetails" class="grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Investigation report</h2>
+      <div id="report" class="report"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Retrieved procedure evidence</h2>
+      <p class="muted">
+        Review each source and its status. Synthetic documents are test fixtures,
+        not approved site procedures.
+      </p>
+      <div id="evidence" class="evidence-list"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Related active alarms</h2>
+      <div id="relatedAlarms"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Correlations</h2>
+      <p class="muted">
+        A shared unit or time window does not by itself prove that one alarm caused another.
+      </p>
+      <div id="correlations"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Operator recommendations</h2>
+      <div id="recommendations"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Warnings</h2>
+      <div id="warnings"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Execution timings</h2>
+      <div id="timings"></div>
+      <div id="timingNote" class="muted section"></div>
+    </section>
+
+    <section class="panel">
+      <details>
+        <summary>View raw API response (debugging)</summary>
+        <pre id="rawResponse"></pre>
+      </details>
+    </section>
+  </div>
+</main>
+
+<script>
+  const byId = id => document.getElementById(id);
+  const form = byId("investigationForm");
+  const runButton = byId("runButton");
+
+  let elapsedInterval = null;
+
+  function safe(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function display(value, fallback = "—") {
+    if (value === null || value === undefined || value === "") return fallback;
+    if (typeof value === "object") return JSON.stringify(value, null, 2);
+    return String(value);
+  }
+
+  function setText(id, value, fallback = "—") {
+    byId(id).textContent = display(value, fallback);
+  }
+
+  function asArray(value) {
+    if (Array.isArray(value)) return value;
+    return value == null ? [] : [value];
+  }
+
+  function empty(id, message = "No data available.") {
+    byId(id).innerHTML = `<div class="empty">${safe(message)}</div>`;
+  }
+
+  function formatDuration(seconds) {
+    if (!Number.isFinite(seconds) || seconds < 0) return "—";
+    if (seconds >= 60) {
+      return `${Math.floor(seconds / 60)}m ${(seconds % 60).toFixed(1)}s`;
+    }
+    return `${seconds.toFixed(2)} s`;
+  }
+
+  function renderGrid(id, data) {
+    const entries = Object.entries(data).filter(([, value]) =>
+      value !== undefined && value !== null && value !== ""
+    );
+
+    if (!entries.length) {
+      empty(id);
+      return;
+    }
+
+    byId(id).innerHTML = entries.map(([key, value]) => `
+      <div class="stat">
+        <div class="stat-label">${safe(key.replaceAll("_", " "))}</div>
+        <div class="stat-value">${safe(display(value))}</div>
+      </div>
+    `).join("");
+  }
+
+  function renderList(id, values, formatter) {
+    const items = asArray(values);
+    if (!items.length) {
+      empty(id);
+      return;
+    }
+
+    byId(id).innerHTML = items.map((item, index) => `
+      <div class="list-item">
+        ${formatter ? formatter(item, index) : `<pre>${safe(display(item))}</pre>`}
+      </div>
+    `).join("");
+  }
+
+  function normalizeEvidence(item) {
+    if (typeof item === "string") {
+      return {
+        title: "Retrieved evidence",
+        docId: "",
+        source: "",
+        revision: "",
+        status: "",
+        section: "",
+        text: item
+      };
+    }
+
+    item = item || {};
+
+    return {
+      title: item.title || item.document_title || item.source || "Retrieved evidence",
+      docId: item.doc_id || item.document_id || item.id || "",
+      source: item.source || item.filename || "",
+      revision: item.revision || item.version || "",
+      status: item.approval_status || item.status || "",
+      section: item.section || item.section_title || "",
+      text: item.text || item.excerpt || item.content || item.chunk_text || ""
+    };
+  }
+
+  function renderEvidence(values) {
+    const items = asArray(values);
+
+    if (!items.length) {
+      empty("evidence", "No procedure evidence was retrieved.");
+      return;
+    }
+
+    byId("evidence").innerHTML = items.map((raw, index) => {
+      const item = normalizeEvidence(raw);
+      const fields = [
+        ["Document ID", item.docId],
+        ["Source file", item.source],
+        ["Revision", item.revision],
+        ["Section", item.section],
+        ["Approval status", item.status]
+      ].filter(([, value]) => value !== "");
+
+      const metadata = fields.map(([label, value]) => {
+        const synthetic = /synthetic|unapproved|demonstration/i.test(value);
+        return `
+          <div class="metadata-item ${synthetic ? "synthetic" : ""}">
+            <span class="metadata-label">${safe(label)}</span>
+            <span class="metadata-value">${safe(value)}</span>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <article class="evidence-card">
+          <div class="evidence-title">E${index + 1}: ${safe(item.title)}</div>
+          <div class="evidence-metadata">
+            ${metadata || `
+              <div class="metadata-item">
+                <span class="metadata-label">Metadata</span>
+                <span class="metadata-value">Not supplied</span>
+              </div>
+            `}
+          </div>
+          <details class="evidence-excerpt">
+            <summary>View source excerpt</summary>
+            <pre class="evidence-text">${safe(item.text || "No excerpt supplied.")}</pre>
+          </details>
+        </article>
+      `;
+    }).join("");
+  }
+
+  function renderReport(report) {
+    let content = typeof report === "string"
+      ? report
+      : report?.markdown || report?.report || report?.content || "";
+
+    if (!content) {
+      byId("report").textContent = "No investigation report was returned.";
+      return;
+    }
+
+    if (window.marked?.parse) {
+      byId("report").innerHTML = window.marked.parse(content);
+    } else {
+      byId("report").innerHTML = `<pre>${safe(content)}</pre>`;
+    }
+  }
+
+  function renderTimings(data, clientElapsed) {
+    const timings = data?.timings || {};
+    const numericEntries = Object.entries(timings).filter(
+      ([, value]) => typeof value === "number" && Number.isFinite(value)
+    );
+
+    if (!numericEntries.length) {
+      empty("timings", "Backend timing details were not returned.");
+      byId("timingNote").textContent =
+        `Browser-measured request duration: ${formatDuration(clientElapsed)}.`;
+      return;
+    }
+
+    byId("timings").innerHTML = numericEntries.map(([name, seconds]) => `
+      <div class="list-item">
+        <div class="status-row">
+          <strong>${safe(name.replaceAll("_", " "))}</strong>
+          <span class="chip">${safe(formatDuration(seconds))}</span>
+        </div>
+        <div class="muted">${safe(seconds.toFixed(3))} seconds</div>
+      </div>
+    `).join("");
+
+    const listed = numericEntries
+      .filter(([name]) => name !== "total_seconds")
+      .reduce((sum, [, value]) => sum + value, 0);
+
+    const total = timings.total_seconds;
+    const difference = Number.isFinite(total) ? total - listed : null;
+
+    if (difference !== null && difference > 1) {
+      byId("timingNote").textContent =
+        `Approximately ${formatDuration(difference)} of the backend total is not explained by the listed timing entries. This may include uninstrumented work, orchestration, or waiting time; the exact cause is not established by these timings alone. Browser-measured duration: ${formatDuration(clientElapsed)}.`;
+    } else {
+      byId("timingNote").textContent =
+        `Browser-measured request duration: ${formatDuration(clientElapsed)}. Small differences between browser and backend timings are expected.`;
+    }
+  }
+
+  function render(data, statusCode, clientElapsed) {
+    byId("results").classList.remove("hidden");
+    byId("errorPanel").classList.add("hidden");
+
+    const alarm = data?.requested_alarm || data?.alarm || {};
+    const asset = data?.asset || {};
+    const priority = data?.priority || {};
+    const report = data?.investigation_report ?? data?.report ?? "";
+    const backendDuration = data?.timings?.total_seconds;
+
+    const duration = Number.isFinite(backendDuration)
+      ? backendDuration
+      : clientElapsed;
+
+    setText("statusChip", data?.investigation_status || data?.status || "completed");
+    setText("httpChip", `HTTP ${statusCode}`);
+    setText("durationChip", `Duration ${formatDuration(duration)}`);
+
+    setText("summaryAlarmId", alarm.alarm_id || alarm.id);
+    setText("summaryDescription", alarm.description || alarm.message || alarm.alarm_name);
+
+    // Fixed: asset_name is the field returned by this project's API.
+    const assetName = asset.asset_name || asset.name || "";
+    const assetId = asset.asset_id || alarm.asset_id || "";
+    setText("summaryAsset", [assetId, assetName].filter(Boolean).join(" · "));
+
+    setText(
+      "summaryPriority",
+      priority.priority_score ?? priority.score ?? priority.priority ?? alarm.priority
+    );
+    setText("traceId", data?.trace_id);
+
+    renderGrid("alarmDetails", {
+      Alarm_ID: alarm.alarm_id || alarm.id,
+      Alarm_Name: alarm.alarm_name,
+      Description: alarm.description || alarm.message,
+      Severity: alarm.severity,
+      Status: alarm.status,
+      Asset_ID: assetId,
+      Asset_Name: assetName,
+      Asset_Type: asset.asset_type,
+      Asset_Criticality: asset.criticality,
+      Site: alarm.site || asset.site,
+      Unit: alarm.unit || asset.unit,
+      Priority: priority.priority_score ?? alarm.priority,
+      Occurrences_24h: alarm.occurrences_24h,
+      Start_Time: alarm.start_time || alarm.timestamp,
+      Acknowledgment_Time: alarm.ack_time
+    });
+
+    renderReport(report);
+    renderEvidence(data?.procedure_evidence || data?.evidence || []);
+
+    renderList(
+      "relatedAlarms",
+      data?.active_alarms_for_asset || data?.related_alarms || [],
+      item => `
+        <strong>${safe(item.alarm_id || item.id || "Alarm")}</strong>
+        <p>${safe(item.description || item.message || "No description")}</p>
+        <div class="status-row">
+          ${item.severity ? `<span class="chip">Severity: ${safe(item.severity)}</span>` : ""}
+          ${item.priority !== undefined ? `<span class="chip">Priority: ${safe(item.priority)}</span>` : ""}
+          ${item.status ? `<span class="chip">Status: ${safe(item.status)}</span>` : ""}
+        </div>
+      `
+    );
+
+    // Show correlation data without implying causation.
+    const correlationData = data?.correlations?.correlations ?? data?.correlations ?? [];
+    renderList("correlations", correlationData, item => `
+      <strong>${safe(item.method || "Correlation")}</strong>
+      <p>${safe(item.interpretation || "Interpretation not supplied.")}</p>
+      <div class="status-row">
+        ${item.unit ? `<span class="chip">Unit: ${safe(item.unit)}</span>` : ""}
+        ${item.support !== undefined ? `<span class="chip">Support: ${safe(item.support)}</span>` : ""}
+        ${item.alarm_ids ? `<span class="chip">Alarms: ${safe(item.alarm_ids.join(", "))}</span>` : ""}
+      </div>
+    `);
+
+    const recommendationData =
+      data?.operator_recommendations?.recommended_actions ||
+      data?.operator_recommendations ||
+      [];
+
+    renderList("recommendations", recommendationData);
+
+    renderList("warnings", data?.warnings || [], item =>
+      `<div class="warning">${safe(display(item))}</div>`
+    );
+
+    renderTimings(data, clientElapsed);
+    setText("rawResponse", JSON.stringify(data, null, 2));
+  }
+
+  function showError(message, statusCode) {
+    byId("errorPanel").classList.remove("hidden");
+    byId("results").classList.add("hidden");
+    byId("errorMessage").textContent =
+      `${statusCode ? `HTTP ${statusCode}\n` : ""}${message}`;
+  }
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const apiUrl = byId("apiUrl").value.trim().replace(/\/+$/, "");
+    const alarmId = byId("alarmId").value.trim();
+    const token = byId("token").value.trim();
+
+    if (!apiUrl || !alarmId || !token) {
+      showError("Enter the API URL, alarm ID, and demo token.");
+      return;
+    }
+
+    const startedAt = performance.now();
+
+    byId("loading").classList.remove("hidden");
+    byId("results").classList.add("hidden");
+    byId("errorPanel").classList.add("hidden");
+    runButton.disabled = true;
+    runButton.textContent = "Investigating…";
+    byId("liveElapsed").textContent = "Elapsed: 0.0 s";
+
+    elapsedInterval = setInterval(() => {
+      const seconds = (performance.now() - startedAt) / 1000;
+      byId("liveElapsed").textContent = `Elapsed: ${seconds.toFixed(1)} s`;
+    }, 250);
+
+    try {
+      const response = await fetch(`${apiUrl}/investigations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ alarm_id: alarmId })
+      });
+
+      const raw = await response.text();
+      const clientElapsed = (performance.now() - startedAt) / 1000;
+
+      let data;
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        throw new Error(`The API response was not valid JSON.\n${raw.slice(0, 1500)}`);
+      }
+
+      if (!response.ok) {
+        const detail = data?.detail;
+        const message = typeof detail === "string"
+          ? detail
+          : JSON.stringify(detail || data, null, 2);
+
+        showError(message || "The investigation request failed.", response.status);
+        return;
+      }
+
+      render(data, response.status, clientElapsed);
+    } catch (error) {
+      showError(error?.message || "Could not connect to the API.");
+    } finally {
+      if (elapsedInterval) {
+        clearInterval(elapsedInterval);
+        elapsedInterval = null;
+      }
+
+      byId("loading").classList.add("hidden");
+      runButton.disabled = false;
+      runButton.textContent = "Investigate alarm";
+    }
+  });
+</script>
+</body>
+</html>

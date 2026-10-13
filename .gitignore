@@ -1,0 +1,23 @@
+
+.DS_Store
+
+
+# Environment secrets
+.env
+.env.*
+
+# Keep an example configuration file if needed
+!.env.example
+
+# Python environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Generated vector database
+chroma_db/
+data/chroma_db/
+
+# Logs and local runtime artifacts
+*.log

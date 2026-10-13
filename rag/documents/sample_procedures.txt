@@ -1,0 +1,19 @@
+
+Document: Example Procedure — High Bearing Temperature
+Procedure ID: DEMO-BRG-001
+Revision: 1
+Status: SYNTHETIC DEMONSTRATION ONLY
+
+Purpose:
+Demonstrate retrieval of information relevant to a high bearing temperature alarm.
+
+Example investigation topics:
+- Review the bearing temperature trend and compare it with approved operating limits.
+- Check available lubrication-system readings and relevant maintenance records.
+- Review related vibration and discharge-pressure alarms.
+- Consult the approved site maintenance procedure before taking corrective action.
+
+Safety:
+This document is synthetic and is not an approved maintenance procedure.
+Do not use it to operate, isolate, repair, or restart industrial equipment.
+Follow approved site procedures and instructions from authorized personnel.

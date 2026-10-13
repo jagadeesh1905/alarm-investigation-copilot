@@ -1,0 +1,22 @@
+Document: Example Procedure – Motor Trip
+Procedure ID: DEMO-MTR-001
+Revision: 1
+Status: SYNTHETIC DEMONSTRATION ONLY
+
+Purpose:
+Demonstrate retrieval of information relevant to a motor trip alarm.
+
+Applicable alarm:
+Motor trip or motor stopped unexpectedly.
+
+Example investigation topics:
+- Confirm the alarm timestamp, motor asset ID, and available trip or fault code.
+- Review available motor-controller or protection-relay event logs for the reported trip.
+- Check relevant motor status, power-supply status, and protection-system indications in the monitoring data.
+- Review recent related alarms and authorized maintenance records for the same asset.
+- Refer to the approved site procedure and authorized personnel before any inspection or corrective action.
+
+Safety:
+This document is synthetic and is not an approved maintenance procedure.
+Do not use it to operate, isolate, repair, or restart industrial equipment.
+Follow approved site procedures and instructions from authorized personnel.
